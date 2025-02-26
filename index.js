@@ -1,22 +1,33 @@
+// index.js
+
 const fs = require('node:fs');
 const path = require('node:path');
-const {Client, Events, GatewayIntentBits, Collection, AttachmentBuilder} = require('discord.js');
+const {Client, Events, GatewayIntentBits, Collection} = require('discord.js');
 const sequelize = require('./database/database');
-const foldersPath = path.join(__dirname, 'features');
-const commandFolders = fs.readdirSync(foldersPath);
-
 require("dotenv").config();
 
-// Intents
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.DirectMessageTyping,
+        GatewayIntentBits.GuildBans,
+        GatewayIntentBits.GuildEmojisAndStickers,
+        GatewayIntentBits.GuildExpressions,
+        GatewayIntentBits.GuildIntegrations,
+        GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessagePolls,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,  // Si vous voulez traiter le contenu des messages
-        GatewayIntentBits.GuildMembers,  // Si vous avez besoin d'accéder aux membres
+        GatewayIntentBits.GuildMessageTyping,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildScheduledEvents,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildWebhooks,
+        GatewayIntentBits.MessageContent,
     ],
-
 });
 
 // Syncro DB
@@ -27,14 +38,16 @@ sequelize.sync().then(() => {
 });
 
 // Initialisation des commandes
+const foldersPath = path.join(__dirname, 'features');
+const commandFolders = fs.readdirSync(foldersPath);
 client.commands = new Collection();
+
 for (const folder of commandFolders) {
     const commandsPath = path.join(foldersPath, folder);
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
         const filePath = path.join(commandsPath, file);
         const command = require(filePath);
-        // Set a new item in the Collection with the key as the command name and the value as the exported module
         if ('data' in command && 'execute' in command) {
             client.commands.set(command.data.name, command);
         } else {
@@ -55,13 +68,21 @@ client.on(Events.InteractionCreate, async interaction => {
     } catch (error) {
         console.error(error);
         if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: 'Une erreur est survenue lors de l\'exécution de cette commande.', ephemeral: true });
+            await interaction.followUp({
+                content: 'Une erreur est survenue lors de l\'exécution de cette commande.',
+                ephemeral: true
+            });
         } else {
-            await interaction.reply({ content: 'Une erreur est survenue lors de l\'exécution de cette commande.', ephemeral: true });
+            await interaction.reply({
+                content: 'Une erreur est survenue lors de l\'exécution de cette commande.',
+                ephemeral: true
+            });
         }
     }
 });
 
+// Importer les écouteurs d'événements
+require('./features/data/listen')(client);
 
 // Ready up
 client.once(Events.ClientReady, readyClient => {
