@@ -8,8 +8,12 @@ module.exports = (client) => {
         if (logChannel) {
             const embed = new EmbedBuilder()
                 .setColor(color)
-                .setTitle(title)
-                .setDescription(description);
+                .setTitle(title);
+
+            // Ajouter la description uniquement si elle n'est pas vide
+            if (description) {
+                embed.setDescription(description);
+            }
 
             if (fields) {
                 for (const field of fields) {
@@ -18,7 +22,7 @@ module.exports = (client) => {
             }
 
             if (footer) {
-                embed.setFooter(footer);
+                embed.setFooter({ text: footer });
             }
 
             await logChannel.send({ embeds: [embed] });
