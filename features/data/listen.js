@@ -1,12 +1,27 @@
-const { Events } = require('discord.js');
+const { Events, EmbedBuilder } = require('discord.js');
 
 module.exports = (client) => {
     const logChannelId = '1344335492224647188'; // ID du salon où les logs seront envoyés
 
     // Fonction utilitaire pour envoyer des messages de log formatés
-    const sendLogMessage = async (logChannel, emoji, action, user, content, date) => {
+    const sendLogMessage = async (logChannel, color, title, description, fields, footer) => {
         if (logChannel) {
-            logChannel.send(`${emoji} **${action}** | ${user} | ${content} | ${date}`);
+            const embed = new EmbedBuilder()
+                .setColor(color)
+                .setTitle(title)
+                .setDescription(description);
+
+            if (fields) {
+                for (const field of fields) {
+                    embed.addFields(field);
+                }
+            }
+
+            if (footer) {
+                embed.setFooter(footer);
+            }
+
+            await logChannel.send({ embeds: [embed] });
         }
     };
 
@@ -21,7 +36,13 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(message.createdTimestamp);
-        await sendLogMessage(logChannel, '<:greenarr:1344347076615606394>', 'NEW_MESS', message.author.tag, message.content, formattedDate);
+        const fields = [
+            { name: 'Auteur', value: message.author.tag, inline: true },
+            { name: 'Contenu', value: message.content, inline: false },
+            { name: 'Salon', value: `[${message.channel.name}](${message.url})`, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0x00FF00, 'Nouveau Message', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
@@ -29,7 +50,14 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(newMessage.createdTimestamp);
-        await sendLogMessage(logChannel, '<:bluearr:1344346432865435679>', 'EDIT_MESS', newMessage.author.tag, `${oldMessage.content} -> ${newMessage.content}`, formattedDate);
+        const fields = [
+            { name: 'Auteur', value: newMessage.author.tag, inline: true },
+            { name: 'Ancien Contenu', value: oldMessage.content, inline: false },
+            { name: 'Nouveau Contenu', value: newMessage.content, inline: false },
+            { name: 'Salon', value: `[${newMessage.channel.name}](${newMessage.url})`, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0x0000FF, 'Message Édité', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.MessageDelete, async message => {
@@ -37,7 +65,13 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(message.createdTimestamp);
-        await sendLogMessage(logChannel, '<:redarr:1344346399679971410>', 'DEL_MESS', message.author.tag, message.content, formattedDate);
+        const fields = [
+            { name: 'Auteur', value: message.author.tag, inline: true },
+            { name: 'Contenu', value: message.content, inline: false },
+            { name: 'Salon', value: `[${message.channel.name}](${message.url})`, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0xFF0000, 'Message Supprimé', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.MessageReactionAdd, async (reaction, user) => {
@@ -45,7 +79,13 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, '<:greenarr:1344347076615606394>', 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: user.tag, inline: true },
+            { name: 'Émoji', value: reaction.emoji.name, inline: true },
+            { name: 'Salon', value: `[${reaction.message.channel.name}](${reaction.message.url})`, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0x00FF00, 'Réaction Ajoutée', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.MessageReactionRemove, async (reaction, user) => {
@@ -53,7 +93,13 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, '<:redarr:1344346399679971410>', 'REM_REACT', user.tag, reaction.emoji.name, formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: user.tag, inline: true },
+            { name: 'Émoji', value: reaction.emoji.name, inline: true },
+            { name: 'Salon', value: `[${reaction.message.channel.name}](${reaction.message.url})`, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0xFF0000, 'Réaction Retirée', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
@@ -63,10 +109,15 @@ module.exports = (client) => {
         const formattedDate = formatDate(Date.now());
         const user = newState.member.user.tag;
         const action = oldState.channelId === null && newState.channelId !== null
-            ? `JOIN_VOICE | ${newState.channel.name}`
-            : `LEAVE_VOICE | ${oldState.channel.name}`;
+            ? `Rejoint le salon vocal | ${newState.channel.name}`
+            : `Quitte le salon vocal | ${oldState.channel.name}`;
 
-        await sendLogMessage(logChannel, '<:voice:1344349315585413180>', action, user, '', formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: user, inline: true },
+            { name: 'Action', value: action, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0xFFA500, 'Mise à Jour Vocale', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.GuildMemberAdd, async member => {
@@ -74,7 +125,11 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, '<:redup:1344349388096405546>', 'JOIN_SERVER', member.user.tag, '', formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: member.user.tag, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0xFF0000, 'Rejoint le Serveur', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.GuildMemberRemove, async member => {
@@ -82,7 +137,11 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, '<:bluedown:1344349425593618432>', 'LEAVE_SERVER', member.user.tag, '', formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: member.user.tag, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0x0000FF, 'Quitte le Serveur', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.GuildBanAdd, async (guild, user) => {
@@ -90,7 +149,11 @@ module.exports = (client) => {
 
         const logChannel = await client.channels.fetch(logChannelId);
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, '<:ban:1344349582397538344>', 'BAN_USER', user.tag, '', formattedDate);
+        const fields = [
+            { name: 'Utilisateur', value: user.tag, inline: true }
+        ];
+
+        await sendLogMessage(logChannel, 0xFF0000, 'Utilisateur Banni', '', fields, `Date: ${formattedDate}`);
     });
 
     client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
@@ -126,19 +189,25 @@ module.exports = (client) => {
         if (addedRoles.size > 0) {
             const roleNames = addedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            await sendLogMessage(logChannel, '<:greenarr:1344347076615606394>', 'ADD_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
+            const fields = [
+                { name: 'Utilisateur', value: newMember.user.tag, inline: true },
+                { name: 'Rôles Ajoutés', value: roleNames, inline: true },
+                { name: 'Par', value: executor ? executor.tag : 'Inconnu', inline: true }
+            ];
+
+            await sendLogMessage(logChannel, 0x00FF00, 'Rôles Ajoutés', '', fields, `Date: ${formattedDate}`);
         }
 
         if (removedRoles.size > 0) {
             const roleNames = removedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            await sendLogMessage(logChannel, '<:redarr:1344346399679971410>', 'REM_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
+            const fields = [
+                { name: 'Utilisateur', value: newMember.user.tag, inline: true },
+                { name: 'Rôles Retirés', value: roleNames, inline: true },
+                { name: 'Par', value: executor ? executor.tag : 'Inconnu', inline: true }
+            ];
+
+            await sendLogMessage(logChannel, 0xFF0000, 'Rôles Retirés', '', fields, `Date: ${formattedDate}`);
         }
     });
-
-
-
-
-
-
 };
