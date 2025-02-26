@@ -1,7 +1,7 @@
 const { Events } = require('discord.js');
 
 module.exports = (client) => {
-    const logChannelId = '1344335492224647188'; // ID du salon où les logs seront envoyés
+    const logChannelId = '1344359532108841051'; // ID du salon où les logs seront envoyés
 
     // Emojis constants
     const EMOJIS = {
