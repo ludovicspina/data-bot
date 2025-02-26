@@ -124,13 +124,13 @@ module.exports = (client) => {
         };
 
         if (addedRoles.size > 0) {
-            const roleMentions = addedRoles.map(role => role.tag).join(', ');
+            const roleMentions = addedRoles.map(role => role.toString()).join(', ');
             const executor = await fetchAuditLogs(24);
             await sendLogMessage(logChannel, '<:greenarr:1344347076615606394>', 'ADD_ROLE', newMember.user.tag, `${roleMentions} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
 
         if (removedRoles.size > 0) {
-            const roleMentions = removedRoles.map(role => role.tag).join(', ');
+            const roleMentions = removedRoles.map(role => role.toString()).join(', ');
             const executor = await fetchAuditLogs(24);
             await sendLogMessage(logChannel, '<:redarr:1344346399679971410>', 'REM_ROLE', newMember.user.tag, `${roleMentions} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
