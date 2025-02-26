@@ -21,7 +21,7 @@ module.exports = (client) => {
     // Fonction utilitaire pour envoyer des messages de log formatés
     const sendLogMessage = async (logChannel, emoji, action, user, content, date) => {
         if (logChannel) {
-            logChannel.send(`${emoji} **${action}** | ${user} | ${content} | ${date}`);
+            logChannel.send(`${emoji} **${action}**   ${user}   ${content}   ${date}`);
         }
     };
 
@@ -77,8 +77,8 @@ module.exports = (client) => {
         const formattedDate = formatDate(Date.now());
         const user = newState.member.user.tag;
         const action = oldState.channelId === null && newState.channelId !== null
-            ? `JOIN_VOICE | ${newState.channel.name}`
-            : `LEAVE_VOICE | ${oldState.channel.name}`;
+            ? `JOIN_VOICE   ${newState.channel.name}`
+            : `LEAVE_VOICE   ${oldState.channel.name}`;
 
         await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
     });
