@@ -144,6 +144,16 @@ module.exports = (client) => {
                 });
             }
 
+            // Vérifier si l'utilisateur existe
+            let dbUser = await User.findOne({ where: { user_id: newState.member.user.id } });
+            if (!dbUser) {
+                // Ajouter l'utilisateur s'il n'existe pas
+                dbUser = await User.create({
+                    user_id: newState.member.user.id,
+                    username: newState.member.user.tag,
+                });
+            }
+
             // Connexion vocale
             await VoiceConnection.create({
                 connection_id: `${newState.member.user.id}-${newState.channelId}-${Date.now()}`,
@@ -166,6 +176,7 @@ module.exports = (client) => {
             }
         }
     });
+
 
     client.on(Events.GuildMemberAdd, async member => {
         if (member.user.bot) return;
