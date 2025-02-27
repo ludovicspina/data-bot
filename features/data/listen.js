@@ -51,25 +51,32 @@ module.exports = (client) => {
         // Envoyer le log dans le salon Discord
         await sendLogMessage(logChannel, EMOJIS.NEW_MESS, 'NEW_MESS', message.author.tag, message.content, formattedDate);
 
-        // Enregistrer dans la base de données
-        await User.upsert({
-            user_id: message.author.id,
-            username: message.author.tag,
-            total_messages_sent: Sequelize.literal('total_messages_sent + 1'),
-        });
+        try {
+            // Enregistrer dans la base de données
+            const [user, userCreated] = await User.upsert({
+                user_id: message.author.id,
+                username: message.author.tag,
+                total_messages_sent: Sequelize.literal('total_messages_sent + 1'),
+            });
+            console.log(`User ${user.username} - Created: ${userCreated} - Total Messages Sent: ${user.total_messages_sent}`);
 
-        await Channel.upsert({
-            channel_id: message.channel.id,
-            channel_name: message.channel.name,
-            total_messages: Sequelize.literal('total_messages + 1'),
-        });
+            const [channel, channelCreated] = await Channel.upsert({
+                channel_id: message.channel.id,
+                channel_name: message.channel.name,
+                total_messages: Sequelize.literal('total_messages + 1'),
+            });
+            console.log(`Channel ${channel.channel_name} - Created: ${channelCreated} - Total Messages: ${channel.total_messages}`);
 
-        await Message.create({
-            message_id: message.id,
-            user_id: message.author.id,
-            channel_id: message.channel.id,
-            timestamp: message.createdTimestamp,
-        });
+            await Message.create({
+                message_id: message.id,
+                user_id: message.author.id,
+                channel_id: message.channel.id,
+                timestamp: message.createdTimestamp,
+            });
+            console.log(`Message ${message.id} created in the database.`);
+        } catch (error) {
+            console.error('Error updating database:', error);
+        }
     });
 
     client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
