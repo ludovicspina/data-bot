@@ -1,4 +1,8 @@
 const { Events } = require('discord.js');
+const User = require('../../database/models/user');
+const Channel = require('../../database/models/channel');
+const Message = require('../../database/models/message');
+const VoiceConnection = require('../../database/models/voiceConnection');
 
 module.exports = (client) => {
     const logChannelId = '1344359532108841051'; // ID du salon où les logs seront envoyés
@@ -38,9 +42,32 @@ module.exports = (client) => {
 
     client.on(Events.MessageCreate, async message => {
         if (message.author.bot) return;
+
         const logChannel = await getLogChannel();
         const formattedDate = formatDate(message.createdTimestamp);
+
+        // Envoyer le log dans le salon Discord
         await sendLogMessage(logChannel, EMOJIS.NEW_MESS, 'NEW_MESS', message.author.tag, message.content, formattedDate);
+
+        // Enregistrer dans la base de données
+        await User.upsert({
+            user_id: message.author.id,
+            username: message.author.tag,
+            total_messages_sent: Sequelize.literal('total_messages_sent + 1'),
+        });
+
+        await Channel.upsert({
+            channel_id: message.channel.id,
+            channel_name: message.channel.name,
+            total_messages: Sequelize.literal('total_messages + 1'),
+        });
+
+        await Message.create({
+            message_id: message.id,
+            user_id: message.author.id,
+            channel_id: message.channel.id,
+            timestamp: message.createdTimestamp,
+        });
     });
 
     client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
@@ -62,6 +89,9 @@ module.exports = (client) => {
         const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
         await sendLogMessage(logChannel, EMOJIS.ADD_REACT, 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
+
+        // Enregistrer dans la base de données
+        await User.increment('total_reactions', { where: { user_id: user.id } });
     });
 
     client.on(Events.MessageReactionRemove, async (reaction, user) => {
@@ -81,6 +111,29 @@ module.exports = (client) => {
             : `LEAVE_VOICE   ${oldState.channel.name}`;
 
         await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
+
+        if (oldState.channelId === null && newState.channelId !== null) {
+            // Connexion vocale
+            await VoiceConnection.create({
+                connection_id: `${newState.member.user.id}-${newState.channelId}-${Date.now()}`,
+                user_id: newState.member.user.id,
+                channel_id: newState.channelId,
+                connection_time: Date.now(),
+            });
+        } else if (oldState.channelId !== null && newState.channelId === null) {
+            // Déconnexion vocale
+            const connection = await VoiceConnection.findOne({
+                where: { user_id: oldState.member.user.id, channel_id: oldState.channelId, disconnection_time: null },
+            });
+            if (connection) {
+                connection.disconnection_time = Date.now();
+                await connection.save();
+
+                // Calculer et incrémenter le temps vocal
+                const voiceTime = connection.disconnection_time - connection.connection_time;
+                await User.increment('total_voice_time', { by: voiceTime, where: { user_id: oldState.member.user.id } });
+            }
+        }
     });
 
     client.on(Events.GuildMemberAdd, async member => {
