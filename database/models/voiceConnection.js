@@ -1,36 +1,34 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../database');
-const User = require('./user');
-const Channel = require('./channel');
+module.exports = (sequelize, DataTypes) => {
+    const User = require('./user')(sequelize, DataTypes);
+    const Channel = require('./channel')(sequelize, DataTypes);
 
-const VoiceConnection = sequelize.define('VoiceConnection', {
-    connection_id: {
-        type: DataTypes.STRING,
-        primaryKey: true,
-    },
-    user_id: {
-        type: DataTypes.STRING,
-        references: {
-            model: User,
-            key: 'user_id',
+    return sequelize.define('VoiceConnection', {
+        connection_id: {
+            type: DataTypes.STRING,
+            primaryKey: true,
         },
-    },
-    channel_id: {
-        type: DataTypes.STRING,
-        references: {
-            model: Channel,
-            key: 'channel_id',
+        user_id: {
+            type: DataTypes.STRING,
+            references: {
+                model: User,
+                key: 'user_id',
+            },
         },
-    },
-    connection_time: {
-        type: DataTypes.DATE,
-    },
-    disconnection_time: {
-        type: DataTypes.DATE,
-    },
-}, {
-    tableName: 'voice_connections',
-    timestamps: false,
-});
-
-module.exports = VoiceConnection;
+        channel_id: {
+            type: DataTypes.STRING,
+            references: {
+                model: Channel,
+                key: 'channel_id',
+            },
+        },
+        connection_time: {
+            type: DataTypes.DATE,
+        },
+        disconnection_time: {
+            type: DataTypes.DATE,
+        },
+    }, {
+        tableName: 'voice_connections',
+        timestamps: false,
+    });
+};

@@ -1,8 +1,12 @@
 const { Events } = require('discord.js');
-const User = require('../../database/models/user');
-const Channel = require('../../database/models/channel');
-const Message = require('../../database/models/message');
-const VoiceConnection = require('../../database/models/voiceConnection');
+const sequelize = require("../../database/database");
+const {Sequelize} = require("sequelize");
+const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
+const Channel = require('../../database/models/channel')(sequelize, Sequelize.DataTypes);
+const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
+const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
+
+
 
 module.exports = (client) => {
     const logChannelId = '1344359532108841051'; // ID du salon où les logs seront envoyés

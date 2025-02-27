@@ -1,33 +1,31 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../database');
-const User = require('./user');
-const Channel = require('./channel');
+module.exports = (sequelize, DataTypes) => {
+    const User = require('./user')(sequelize, DataTypes);
+    const Channel = require('./channel')(sequelize, DataTypes);
 
-const Message = sequelize.define('Message', {
-    message_id: {
-        type: DataTypes.STRING,
-        primaryKey: true,
-    },
-    user_id: {
-        type: DataTypes.STRING,
-        references: {
-            model: User,
-            key: 'user_id',
+    return sequelize.define('Message', {
+        message_id: {
+            type: DataTypes.STRING,
+            primaryKey: true,
         },
-    },
-    channel_id: {
-        type: DataTypes.STRING,
-        references: {
-            model: Channel,
-            key: 'channel_id',
+        user_id: {
+            type: DataTypes.STRING,
+            references: {
+                model: User,
+                key: 'user_id',
+            },
         },
-    },
-    timestamp: {
-        type: DataTypes.DATE,
-    },
-}, {
-    tableName: 'messages',
-    timestamps: false,
-});
-
-module.exports = Message;
+        channel_id: {
+            type: DataTypes.STRING,
+            references: {
+                model: Channel,
+                key: 'channel_id',
+            },
+        },
+        timestamp: {
+            type: DataTypes.DATE,
+        },
+    }, {
+        tableName: 'messages',
+        timestamps: false,
+    });
+};
