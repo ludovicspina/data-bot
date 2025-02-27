@@ -1,8 +1,4 @@
 const { Sequelize } = require('sequelize');
-const User = require('./models/user');
-const Channel = require('./models/channel');
-const Message = require('./models/message');
-const VoiceConnection = require('./models/voiceConnection');
 require('dotenv').config();
 
 const sequelize = new Sequelize(
@@ -15,6 +11,12 @@ const sequelize = new Sequelize(
         logging: false,
     }
 );
+
+// Importez les modèles après avoir initialisé Sequelize
+const User = require('./models/user')(sequelize, Sequelize.DataTypes);
+const Channel = require('./models/channel')(sequelize, Sequelize.DataTypes);
+const Message = require('./models/message')(sequelize, Sequelize.DataTypes);
+const VoiceConnection = require('./models/voiceConnection')(sequelize, Sequelize.DataTypes);
 
 sequelize.sync().then(() => {
     console.log('Base de données synchronisée');
