@@ -1,12 +1,10 @@
 const { Events } = require('discord.js');
 const sequelize = require("../../database/database");
-const {Sequelize} = require("sequelize");
+const { Sequelize } = require("sequelize");
 const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
 const Channel = require('../../database/models/channel')(sequelize, Sequelize.DataTypes);
 const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
 const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
-
-
 
 module.exports = (client) => {
     const logChannelId = '1344359532108841051'; // ID du salon où les logs seront envoyés
@@ -107,6 +105,7 @@ module.exports = (client) => {
 
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         if (oldState.member.user.bot || newState.member.user.bot) return;
+
         const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
         const user = newState.member.user.tag;
@@ -117,6 +116,16 @@ module.exports = (client) => {
         await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
 
         if (oldState.channelId === null && newState.channelId !== null) {
+            // Vérifier si le canal vocal existe
+            let channel = await Channel.findOne({ where: { channel_id: newState.channelId } });
+            if (!channel) {
+                // Ajouter le canal s'il n'existe pas
+                channel = await Channel.create({
+                    channel_id: newState.channelId,
+                    channel_name: newState.channel.name,
+                });
+            }
+
             // Connexion vocale
             await VoiceConnection.create({
                 connection_id: `${newState.member.user.id}-${newState.channelId}-${Date.now()}`,
