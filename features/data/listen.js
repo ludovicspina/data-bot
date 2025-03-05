@@ -53,26 +53,28 @@ module.exports = (client) => {
 
         try {
             // Incrémenter total_messages_sent pour l'utilisateur
-            const user = await User.findOne({ where: { user_id: message.author.id } });
+            const user = await User.findOne({ where: { user_id: message.author.id, guild_id: message.guild.id } });
             if (user) {
                 await user.increment('total_messages_sent');
                 console.log(`User ${user.username} - Total Messages Sent: ${user.total_messages_sent}`);
             } else {
                 await User.create({
                     user_id: message.author.id,
+                    guild_id: message.guild.id,
                     username: message.author.tag,
                     total_messages_sent: 1,
                 });
             }
 
             // Incrémenter total_messages pour le canal
-            const channel = await Channel.findOne({ where: { channel_id: message.channel.id } });
+            const channel = await Channel.findOne({ where: { channel_id: message.channel.id, guild_id: message.guild.id } });
             if (channel) {
                 await channel.increment('total_messages');
                 console.log(`Channel ${channel.channel_name} - Total Messages: ${channel.total_messages}`);
             } else {
                 await Channel.create({
                     channel_id: message.channel.id,
+                    guild_id: message.guild.id,
                     channel_name: message.channel.name,
                     total_messages: 1,
                 });
@@ -80,6 +82,7 @@ module.exports = (client) => {
 
             await Message.create({
                 message_id: message.id,
+                guild_id: message.guild.id,
                 user_id: message.author.id,
                 channel_id: message.channel.id,
                 timestamp: message.createdTimestamp,
@@ -111,7 +114,7 @@ module.exports = (client) => {
         await sendLogMessage(logChannel, EMOJIS.ADD_REACT, 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
 
         // Enregistrer dans la base de données
-        await User.increment('total_reactions', { where: { user_id: user.id } });
+        await User.increment('total_reactions', { where: { user_id: user.id, guild_id: reaction.message.guild.id } });
     });
 
     client.on(Events.MessageReactionRemove, async (reaction, user) => {
@@ -135,21 +138,23 @@ module.exports = (client) => {
 
         if (oldState.channelId === null && newState.channelId !== null) {
             // Vérifier si le canal vocal existe
-            let channel = await Channel.findOne({ where: { channel_id: newState.channelId } });
+            let channel = await Channel.findOne({ where: { channel_id: newState.channelId, guild_id: newState.guild.id } });
             if (!channel) {
                 // Ajouter le canal s'il n'existe pas
                 channel = await Channel.create({
                     channel_id: newState.channelId,
+                    guild_id: newState.guild.id,
                     channel_name: newState.channel.name,
                 });
             }
 
             // Vérifier si l'utilisateur existe
-            let dbUser = await User.findOne({ where: { user_id: newState.member.user.id } });
+            let dbUser = await User.findOne({ where: { user_id: newState.member.user.id, guild_id: newState.guild.id } });
             if (!dbUser) {
                 // Ajouter l'utilisateur s'il n'existe pas
                 dbUser = await User.create({
                     user_id: newState.member.user.id,
+                    guild_id: newState.guild.id,
                     username: newState.member.user.tag,
                 });
             }
@@ -157,6 +162,7 @@ module.exports = (client) => {
             // Connexion vocale
             await VoiceConnection.create({
                 connection_id: `${newState.member.user.id}-${newState.channelId}-${Date.now()}`,
+                guild_id: newState.guild.id,
                 user_id: newState.member.user.id,
                 channel_id: newState.channelId,
                 connection_time: Date.now(),
@@ -164,7 +170,7 @@ module.exports = (client) => {
         } else if (oldState.channelId !== null && newState.channelId === null) {
             // Déconnexion vocale
             const connection = await VoiceConnection.findOne({
-                where: { user_id: oldState.member.user.id, channel_id: oldState.channelId, disconnection_time: null },
+                where: { user_id: oldState.member.user.id, channel_id: oldState.channelId, disconnection_time: null, guild_id: oldState.guild.id },
             });
             if (connection) {
                 connection.disconnection_time = Date.now();
@@ -172,11 +178,10 @@ module.exports = (client) => {
 
                 // Calculer et incrémenter le temps vocal
                 const voiceTime = connection.disconnection_time - connection.connection_time;
-                await User.increment('total_voice_time', { by: voiceTime, where: { user_id: oldState.member.user.id } });
+                await User.increment('total_voice_time', { by: voiceTime, where: { user_id: oldState.member.user.id, guild_id: oldState.guild.id } });
             }
         }
     });
-
 
     client.on(Events.GuildMemberAdd, async member => {
         if (member.user.bot) return;
