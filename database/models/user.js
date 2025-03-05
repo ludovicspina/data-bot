@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         guild_id: {
             type: DataTypes.STRING,
-            allowNull: false,
+            primaryKey: true, // Ajoutez cette ligne pour créer une clé composite
         },
         username: {
             type: DataTypes.STRING,

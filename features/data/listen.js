@@ -38,10 +38,7 @@ module.exports = (client) => {
     client.on(Events.MessageCreate, async message => {
         if (message.author.bot) return;
 
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(message.createdTimestamp);
-
-        // await sendLogMessage(logChannel, EMOJIS.NEW_MESS, 'NEW_MESS', message.author.tag, message.content, formattedDate);
 
         try {
             // Incrémenter total_messages_sent pour l'utilisateur
@@ -87,23 +84,17 @@ module.exports = (client) => {
 
     client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
         if (newMessage.author.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(newMessage.createdTimestamp);
-        // await sendLogMessage(logChannel, EMOJIS.EDIT_MESS, 'EDIT_MESS', newMessage.author.tag, `${oldMessage.content} -> ${newMessage.content}`, formattedDate);
     });
 
     client.on(Events.MessageDelete, async message => {
         if (message.author.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(message.createdTimestamp);
-        // await sendLogMessage(logChannel, EMOJIS.DEL_MESS, 'DEL_MESS', message.author.tag, message.content, formattedDate);
     });
 
     client.on(Events.MessageReactionAdd, async (reaction, user) => {
         if (user.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        // await sendLogMessage(logChannel, EMOJIS.ADD_REACT, 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
 
         // Enregistrer dans la base de données
         await User.increment('total_reactions', { where: { user_id: user.id, guild_id: reaction.message.guild.id } });
@@ -111,22 +102,17 @@ module.exports = (client) => {
 
     client.on(Events.MessageReactionRemove, async (reaction, user) => {
         if (user.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        // await sendLogMessage(logChannel, EMOJIS.REM_REACT, 'REM_REACT', user.tag, reaction.emoji.name, formattedDate);
     });
 
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         if (oldState.member.user.bot || newState.member.user.bot) return;
 
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
         const user = newState.member.user.tag;
         const action = oldState.channelId === null && newState.channelId !== null
             ? `JOIN_VOICE   ${newState.channel.name}`
             : `LEAVE_VOICE   ${oldState.channel.name}`;
-
-        // await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
 
         if (oldState.channelId === null && newState.channelId !== null) {
             // Vérifier si le canal vocal existe
@@ -177,30 +163,21 @@ module.exports = (client) => {
 
     client.on(Events.GuildMemberAdd, async member => {
         if (member.user.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        // await sendLogMessage(logChannel, EMOJIS.JOIN_SERVER, 'JOIN_SERVER', member.user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildMemberRemove, async member => {
         if (member.user.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        // await sendLogMessage(logChannel, EMOJIS.LEAVE_SERVER, 'LEAVE_SERVER', member.user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildBanAdd, async (guild, user) => {
         if (user.bot) return;
-        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        // await sendLogMessage(logChannel, EMOJIS.BAN_USER, 'BAN_USER', user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
         if (oldMember.user.bot) return;
-        // const logChannel = await getLogChannel();
-        if (!logChannel) return;
-
         const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
         const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
         const formattedDate = formatDate(Date.now());
@@ -225,13 +202,11 @@ module.exports = (client) => {
         if (addedRoles.size > 0) {
             const roleNames = addedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            // await sendLogMessage(logChannel, EMOJIS.ADD_ROLE, 'ADD_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
 
         if (removedRoles.size > 0) {
             const roleNames = removedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            // await sendLogMessage(logChannel, EMOJIS.REM_ROLE, 'REM_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
     });
 };
