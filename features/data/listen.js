@@ -7,7 +7,7 @@ const Message = require('../../database/models/message')(sequelize, Sequelize.Da
 const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
 
 module.exports = (client) => {
-    const logChannelId = '1344359532108841051'; // ID du salon où les logs seront envoyés
+    const logChannelId = '1344359532108841051'; // ID du salon où les logs seraient envoyés
 
     // Emojis constants
     const EMOJIS = {
@@ -24,13 +24,6 @@ module.exports = (client) => {
         REM_ROLE: '<:redarr:1344346399679971410>'
     };
 
-    // Fonction utilitaire pour envoyer des messages de log formatés
-    const sendLogMessage = async (logChannel, emoji, action, user, content, date) => {
-        if (logChannel) {
-            logChannel.send(`${emoji} **${action}**   ${user}   ${content}   ${date}`);
-        }
-    };
-
     // Fonction utilitaire pour formater la date
     const formatDate = (timestamp) => {
         const date = new Date(timestamp);
@@ -45,11 +38,10 @@ module.exports = (client) => {
     client.on(Events.MessageCreate, async message => {
         if (message.author.bot) return;
 
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(message.createdTimestamp);
 
-        // Envoyer le log dans le salon Discord
-        await sendLogMessage(logChannel, EMOJIS.NEW_MESS, 'NEW_MESS', message.author.tag, message.content, formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.NEW_MESS, 'NEW_MESS', message.author.tag, message.content, formattedDate);
 
         try {
             // Incrémenter total_messages_sent pour l'utilisateur
@@ -95,23 +87,23 @@ module.exports = (client) => {
 
     client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
         if (newMessage.author.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(newMessage.createdTimestamp);
-        await sendLogMessage(logChannel, EMOJIS.EDIT_MESS, 'EDIT_MESS', newMessage.author.tag, `${oldMessage.content} -> ${newMessage.content}`, formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.EDIT_MESS, 'EDIT_MESS', newMessage.author.tag, `${oldMessage.content} -> ${newMessage.content}`, formattedDate);
     });
 
     client.on(Events.MessageDelete, async message => {
         if (message.author.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(message.createdTimestamp);
-        await sendLogMessage(logChannel, EMOJIS.DEL_MESS, 'DEL_MESS', message.author.tag, message.content, formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.DEL_MESS, 'DEL_MESS', message.author.tag, message.content, formattedDate);
     });
 
     client.on(Events.MessageReactionAdd, async (reaction, user) => {
         if (user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, EMOJIS.ADD_REACT, 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.ADD_REACT, 'ADD_REACT', user.tag, reaction.emoji.name, formattedDate);
 
         // Enregistrer dans la base de données
         await User.increment('total_reactions', { where: { user_id: user.id, guild_id: reaction.message.guild.id } });
@@ -119,22 +111,22 @@ module.exports = (client) => {
 
     client.on(Events.MessageReactionRemove, async (reaction, user) => {
         if (user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, EMOJIS.REM_REACT, 'REM_REACT', user.tag, reaction.emoji.name, formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.REM_REACT, 'REM_REACT', user.tag, reaction.emoji.name, formattedDate);
     });
 
     client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         if (oldState.member.user.bot || newState.member.user.bot) return;
 
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
         const user = newState.member.user.tag;
         const action = oldState.channelId === null && newState.channelId !== null
             ? `JOIN_VOICE   ${newState.channel.name}`
             : `LEAVE_VOICE   ${oldState.channel.name}`;
 
-        await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.VOICE, action, user, '', formattedDate);
 
         if (oldState.channelId === null && newState.channelId !== null) {
             // Vérifier si le canal vocal existe
@@ -185,28 +177,28 @@ module.exports = (client) => {
 
     client.on(Events.GuildMemberAdd, async member => {
         if (member.user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, EMOJIS.JOIN_SERVER, 'JOIN_SERVER', member.user.tag, '', formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.JOIN_SERVER, 'JOIN_SERVER', member.user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildMemberRemove, async member => {
         if (member.user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, EMOJIS.LEAVE_SERVER, 'LEAVE_SERVER', member.user.tag, '', formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.LEAVE_SERVER, 'LEAVE_SERVER', member.user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildBanAdd, async (guild, user) => {
         if (user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         const formattedDate = formatDate(Date.now());
-        await sendLogMessage(logChannel, EMOJIS.BAN_USER, 'BAN_USER', user.tag, '', formattedDate);
+        // await sendLogMessage(logChannel, EMOJIS.BAN_USER, 'BAN_USER', user.tag, '', formattedDate);
     });
 
     client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
         if (oldMember.user.bot) return;
-        const logChannel = await getLogChannel();
+        // const logChannel = await getLogChannel();
         if (!logChannel) return;
 
         const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
@@ -233,13 +225,13 @@ module.exports = (client) => {
         if (addedRoles.size > 0) {
             const roleNames = addedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            await sendLogMessage(logChannel, EMOJIS.ADD_ROLE, 'ADD_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
+            // await sendLogMessage(logChannel, EMOJIS.ADD_ROLE, 'ADD_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
 
         if (removedRoles.size > 0) {
             const roleNames = removedRoles.map(role => role.name).join(', ');
             const executor = await fetchAuditLogs(24);
-            await sendLogMessage(logChannel, EMOJIS.REM_ROLE, 'REM_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
+            // await sendLogMessage(logChannel, EMOJIS.REM_ROLE, 'REM_ROLE', newMember.user.tag, `${roleNames} par ${executor ? executor.tag : 'Inconnu'}`, formattedDate);
         }
     });
 };
