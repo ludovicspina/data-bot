@@ -91,15 +91,26 @@ module.exports = {
                 userMap[user.user_id] = user.username;
             });
 
-            // Formater les résultats
-            const result = Object.keys(userData).map(userId => {
-                const username = userMap[userId] || 'Utilisateur inconnu';
-                const messagesSent = userData[userId].messages;
-                const voiceTime = Math.floor(userData[userId].voiceTime / 1000); // en secondes
-                return `- **${username}**: ${messagesSent} messages, ${voiceTime} secondes en vocal`;
-            });
+            // Convertir userData en tableau pour le tri
+            const userArray = Object.keys(userData).map(userId => ({
+                userId,
+                ...userData[userId],
+                username: userMap[userId] || 'Utilisateur inconnu',
+            }));
 
-            const response = `Données pour la période ${period} :\n${result.join('\n')}`;
+            // Trier et sélectionner le top 5 pour les messages
+            const topMessages = userArray.sort((a, b) => b.messages - a.messages).slice(0, 5);
+            const topMessagesResult = topMessages.map(user =>
+                `- **${user.username}**: ${user.messages} messages`
+            ).join('\n');
+
+            // Trier et sélectionner le top 5 pour la durée en vocal
+            const topVoiceTime = userArray.sort((a, b) => b.voiceTime - a.voiceTime).slice(0, 5);
+            const topVoiceTimeResult = topVoiceTime.map(user =>
+                `- **${user.username}**: ${Math.floor(user.voiceTime / 1000)} secondes en vocal`
+            ).join('\n');
+
+            const response = `Données pour la période ${period} :\n\n**Top 5 des utilisateurs par messages envoyés :**\n${topMessagesResult}\n\n**Top 5 des utilisateurs par durée en vocal :**\n${topVoiceTimeResult}`;
 
             // Vérifiez la longueur de la réponse
             if (response.length > 2000) {
@@ -114,5 +125,6 @@ module.exports = {
             await interaction.reply('Une erreur est survenue lors de la récupération des données.');
         }
     }
+
 
 };
