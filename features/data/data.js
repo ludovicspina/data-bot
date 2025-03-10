@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const sequelize = require('../../database/database');
 const { Sequelize } = require('sequelize');
 const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
@@ -19,6 +19,11 @@ module.exports = {
                     { name: 'mois', value: 'month' },
                 )),
     async execute(interaction) {
+        // Vérifiez si l'utilisateur a les permissions d'administrateur
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply('Vous n\'avez pas les permissions nécessaires pour utiliser cette commande.');
+        }
+
         const period = interaction.options.getString('period');
         const guildId = interaction.guild.id;
         let startDate;
