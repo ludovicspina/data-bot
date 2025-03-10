@@ -99,10 +99,20 @@ module.exports = {
                 return `- **${username}**: ${messagesSent} messages, ${voiceTime} secondes en vocal`;
             });
 
-            await interaction.reply(`Données pour la période ${period} :\n${result.join('\n')}`);
+            const response = `Données pour la période ${period} :\n${result.join('\n')}`;
+
+            // Vérifiez la longueur de la réponse
+            if (response.length > 2000) {
+                console.error('La réponse dépasse la limite de 2000 caractères.');
+                return interaction.reply('La réponse est trop longue pour être affichée.');
+            }
+
+            console.log('Réponse envoyée :', response);
+            await interaction.reply(response);
         } catch (error) {
             console.error('Erreur lors de la récupération des données :', error);
             await interaction.reply('Une erreur est survenue lors de la récupération des données.');
         }
-    },
+    }
+
 };

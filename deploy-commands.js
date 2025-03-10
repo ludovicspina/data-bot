@@ -1,5 +1,5 @@
 const { REST, Routes } = require('discord.js');
-const { clientId, guildIds, token } = require('./config.json');
+const { clientId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -28,18 +28,18 @@ for (const folder of commandFolders) {
 // Préparer une instance du module REST
 const rest = new REST().setToken(token);
 
-// Déployer les commandes dans tous les serveurs spécifiques
+// Déployer les commandes globalement
 (async () => {
     try {
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
-        for (const guildId of guildIds) {
-            const data = await rest.put(
-                Routes.applicationGuildCommands(clientId, guildId),
-                { body: commands },
-            );
-            console.log(`Successfully reloaded ${data.length} application (/) commands for guild ${guildId}.`);
-        }
+        // Utiliser la route globale pour enregistrer les commandes
+        const data = await rest.put(
+            Routes.applicationCommands(clientId),
+            { body: commands },
+        );
+
+        console.log(`Successfully reloaded ${data.length} application (/) commands globally.`);
     } catch (error) {
         console.error(error);
     }
