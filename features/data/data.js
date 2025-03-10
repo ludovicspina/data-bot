@@ -4,7 +4,6 @@ const { Sequelize } = require('sequelize');
 const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
 const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
 const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
-const Reaction = require('../../database/models/reaction')(sequelize, Sequelize.DataTypes); // Ajoutez le modèle pour les réactions
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -20,6 +19,7 @@ module.exports = {
                     { name: 'mois', value: 'month' },
                 )),
     async execute(interaction) {
+        // Vérifiez si l'utilisateur a les permissions d'administrateur
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply('Vous n\'avez pas les permissions nécessaires pour utiliser cette commande.');
         }
@@ -43,6 +43,7 @@ module.exports = {
         }
 
         try {
+            // Récupérer les messages et les connexions vocales pour la période spécifiée
             const messages = await Message.findAll({
                 where: {
                     guild_id: guildId,
@@ -64,15 +65,14 @@ module.exports = {
                 },
             });
 
-            const reactions = await Reaction.findAll({
+            // Récupérer les utilisateurs avec leurs réactions
+            const users = await User.findAll({
                 where: {
                     guild_id: guildId,
-                    timestamp: {
-                        [Sequelize.Op.gte]: startDate,
-                    },
                 },
             });
 
+            // Calculer les totaux par utilisateur
             const userData = {};
 
             messages.forEach(message => {
@@ -90,18 +90,11 @@ module.exports = {
                 userData[connection.user_id].voiceTime += voiceTime;
             });
 
-            reactions.forEach(reaction => {
-                if (!userData[reaction.user_id]) {
-                    userData[reaction.user_id] = { messages: 0, voiceTime: 0, reactions: 0 };
+            users.forEach(user => {
+                if (!userData[user.user_id]) {
+                    userData[user.user_id] = { messages: 0, voiceTime: 0, reactions: 0 };
                 }
-                userData[reaction.user_id].reactions++;
-            });
-
-            const users = await User.findAll({
-                where: {
-                    guild_id: guildId,
-                    user_id: Object.keys(userData),
-                },
+                userData[user.user_id].reactions = user.total_reactions;
             });
 
             const userMap = {};
@@ -109,22 +102,26 @@ module.exports = {
                 userMap[user.user_id] = user.username;
             });
 
+            // Convertir userData en tableau pour le tri
             const userArray = Object.keys(userData).map(userId => ({
                 userId,
                 ...userData[userId],
                 username: userMap[userId] || 'Utilisateur inconnu',
             }));
 
+            // Trier et sélectionner le top 5 pour les messages
             const topMessages = userArray.sort((a, b) => b.messages - a.messages).slice(0, 5);
             const topMessagesResult = topMessages.map(user =>
                 `- <@${user.userId}>: ${user.messages} messages`
             ).join('\n');
 
+            // Trier et sélectionner le top 5 pour la durée en vocal
             const topVoiceTime = userArray.sort((a, b) => b.voiceTime - a.voiceTime).slice(0, 5);
             const topVoiceTimeResult = topVoiceTime.map(user =>
                 `- <@${user.userId}>: ${(user.voiceTime / 3600000).toFixed(2)} heures en vocal`
             ).join('\n');
 
+            // Trier et sélectionner le top 5 pour les réactions
             const topReactions = userArray.sort((a, b) => b.reactions - a.reactions).slice(0, 5);
             const topReactionsResult = topReactions.map(user =>
                 `- <@${user.userId}>: ${user.reactions} réactions`
@@ -139,6 +136,7 @@ module.exports = {
                     { name: 'Top 5 des utilisateurs par réactions envoyées', value: topReactionsResult }
                 );
 
+            // Vérifiez la longueur de la réponse
             if (embed.data.description?.length > 2000 || embed.data.fields.some(field => field.value.length > 1024)) {
                 console.error('La réponse dépasse la limite de 2000 caractères.');
                 return interaction.reply('La réponse est trop longue pour être affichée.');
