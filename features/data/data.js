@@ -1,4 +1,9 @@
-const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder,EmbedBuilder } = require('discord.js');
+const sequelize = require('../../database/database');
+const { Sequelize } = require('sequelize');
+const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
+const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
+const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
 
 module.exports = {
     data: new SlashCommandBuilder()
