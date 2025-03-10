@@ -129,11 +129,11 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setTitle(`Données pour la période : ${period}`)
-                .setColor(0x00AE86)
+                .setColor(0xE73B06)
                 .addFields(
-                    { name: 'Top 5 des utilisateurs par messages envoyés', value: topMessagesResult },
-                    { name: 'Top 5 des utilisateurs par durée en vocal', value: topVoiceTimeResult },
-                    { name: 'Top 5 des utilisateurs par réactions envoyées', value: topReactionsResult }
+                    { name: 'Top 5 des messages envoyés', value: topMessagesResult },
+                    { name: 'Top 5 des durée en vocal', value: topVoiceTimeResult },
+                    { name: 'Top 5 des réactions envoyées', value: topReactionsResult }
                 );
 
             // Vérifiez la longueur de la réponse
