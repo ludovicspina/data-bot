@@ -1,4 +1,4 @@
-const { SlashCommandBuilder,EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const sequelize = require('../../database/database');
 const { Sequelize } = require('sequelize');
 const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
@@ -101,13 +101,13 @@ module.exports = {
             // Trier et sélectionner le top 5 pour les messages
             const topMessages = userArray.sort((a, b) => b.messages - a.messages).slice(0, 5);
             const topMessagesResult = topMessages.map(user =>
-                `- **${user.username}**: ${user.messages} messages`
+                `- <@${user.userId}>: ${user.messages} messages`
             ).join('\n');
 
             // Trier et sélectionner le top 5 pour la durée en vocal
             const topVoiceTime = userArray.sort((a, b) => b.voiceTime - a.voiceTime).slice(0, 5);
             const topVoiceTimeResult = topVoiceTime.map(user =>
-                `- **${user.username}**: ${Math.floor(user.voiceTime / 1000)} secondes en vocal`
+                `- <@${user.userId}>: ${(user.voiceTime / 3600000).toFixed(2)} heures en vocal`
             ).join('\n');
 
             const embed = new EmbedBuilder()
