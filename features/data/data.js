@@ -4,6 +4,7 @@ const { Sequelize } = require('sequelize');
 const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
 const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
 const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
+const Reaction = require('../../database/models/reaction')(sequelize, Sequelize.DataTypes); // Nouveau modèle pour les réactions
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -43,7 +44,7 @@ module.exports = {
         }
 
         try {
-            // Récupérer les messages et les connexions vocales pour la période spécifiée
+            // Récupérer les messages, les connexions vocales et les réactions pour la période spécifiée
             const messages = await Message.findAll({
                 where: {
                     guild_id: guildId,
@@ -65,12 +66,21 @@ module.exports = {
                 },
             });
 
+            const reactions = await Reaction.findAll({
+                where: {
+                    guild_id: guildId,
+                    timestamp: {
+                        [Sequelize.Op.gte]: startDate,
+                    },
+                },
+            });
+
             // Calculer les totaux par utilisateur
             const userData = {};
 
             messages.forEach(message => {
                 if (!userData[message.user_id]) {
-                    userData[message.user_id] = { messages: 0, voiceTime: 0 };
+                    userData[message.user_id] = { messages: 0, voiceTime: 0, reactions: 0 };
                 }
                 userData[message.user_id].messages++;
             });
@@ -78,9 +88,16 @@ module.exports = {
             voiceConnections.forEach(connection => {
                 const voiceTime = connection.disconnection_time - connection.connection_time;
                 if (!userData[connection.user_id]) {
-                    userData[connection.user_id] = { messages: 0, voiceTime: 0 };
+                    userData[connection.user_id] = { messages: 0, voiceTime: 0, reactions: 0 };
                 }
                 userData[connection.user_id].voiceTime += voiceTime;
+            });
+
+            reactions.forEach(reaction => {
+                if (!userData[reaction.user_id]) {
+                    userData[reaction.user_id] = { messages: 0, voiceTime: 0, reactions: 0 };
+                }
+                userData[reaction.user_id].reactions++;
             });
 
             // Récupérer les noms d'utilisateur
@@ -115,12 +132,19 @@ module.exports = {
                 `- <@${user.userId}>: ${(user.voiceTime / 3600000).toFixed(2)} heures en vocal`
             ).join('\n');
 
+            // Trier et sélectionner le top 5 pour les réactions
+            const topReactions = userArray.sort((a, b) => b.reactions - a.reactions).slice(0, 5);
+            const topReactionsResult = topReactions.map(user =>
+                `- <@${user.userId}>: ${user.reactions} réactions`
+            ).join('\n');
+
             const embed = new EmbedBuilder()
                 .setTitle(`Données pour la période : ${period}`)
                 .setColor(0x00AE86)
                 .addFields(
                     { name: 'Top 5 des utilisateurs par messages envoyés', value: topMessagesResult },
-                    { name: 'Top 5 des utilisateurs par durée en vocal', value: topVoiceTimeResult }
+                    { name: 'Top 5 des utilisateurs par durée en vocal', value: topVoiceTimeResult },
+                    { name: 'Top 5 des utilisateurs par réactions', value: topReactionsResult }
                 );
 
             // Vérifiez la longueur de la réponse
