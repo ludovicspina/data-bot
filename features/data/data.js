@@ -1,9 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
-const sequelize = require('../../database/database');
-const { Sequelize } = require('sequelize');
-const User = require('../../database/models/user')(sequelize, Sequelize.DataTypes);
-const Message = require('../../database/models/message')(sequelize, Sequelize.DataTypes);
-const VoiceConnection = require('../../database/models/voiceConnection')(sequelize, Sequelize.DataTypes);
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -110,21 +105,25 @@ module.exports = {
                 `- **${user.username}**: ${Math.floor(user.voiceTime / 1000)} secondes en vocal`
             ).join('\n');
 
-            const response = `Données pour la période ${period} :\n\n**Top 5 des utilisateurs par messages envoyés :**\n${topMessagesResult}\n\n**Top 5 des utilisateurs par durée en vocal :**\n${topVoiceTimeResult}`;
+            const embed = new EmbedBuilder()
+                .setTitle(`Données pour la période : ${period}`)
+                .setColor(0x00AE86)
+                .addFields(
+                    { name: 'Top 5 des utilisateurs par messages envoyés', value: topMessagesResult },
+                    { name: 'Top 5 des utilisateurs par durée en vocal', value: topVoiceTimeResult }
+                );
 
             // Vérifiez la longueur de la réponse
-            if (response.length > 2000) {
+            if (embed.data.description?.length > 2000 || embed.data.fields.some(field => field.value.length > 1024)) {
                 console.error('La réponse dépasse la limite de 2000 caractères.');
                 return interaction.reply('La réponse est trop longue pour être affichée.');
             }
 
-            console.log('Réponse envoyée :', response);
-            await interaction.reply(response);
+            console.log('Réponse envoyée :', embed);
+            await interaction.reply({ embeds: [embed] });
         } catch (error) {
             console.error('Erreur lors de la récupération des données :', error);
             await interaction.reply('Une erreur est survenue lors de la récupération des données.');
         }
     }
-
-
 };
